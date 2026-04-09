@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Pace AI — Demo</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#0d0d1a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow:hidden}
+.app{max-width:430px;margin:0 auto;height:100vh;display:flex;flex-direction:column;position:relative;background:#fff}
+
+/* STATUS BAR */
+.status{height:44px;background:#185FA5;display:flex;align-items:flex-end;padding:0 20px 8px;flex-shrink:0}
+.status-time{font-size:15px;font-weight:600;color:#fff}
+.status-right{margin-left:auto;display:flex;gap:5px;align-items:center}
+.status-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.6)}
+
+/* SCREENS */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;transition:transform 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.35s;background:#fff}
+.screen.hidden{transform:translateX(100%);opacity:0;pointer-events:none}
+.screen.exit{transform:translateX(-100%);opacity:0;pointer-events:none}
+
+/* ── SCREEN 1: WELCOME ── */
+.welcome-header{background:#185FA5;padding:44px 24px 28px;text-align:center;flex-shrink:0}
+.pace-wordmark{font-size:52px;font-weight:800;color:#fff;letter-spacing:-2px;line-height:1}
+.pace-tagline{font-size:12px;color:#85B7EB;letter-spacing:0.12em;text-transform:uppercase;margin-top:6px}
+.robot-wrap{width:80px;height:80px;background:rgba(255,255,255,0.15);border-radius:50%;margin:16px auto 0;display:flex;align-items:center;justify-content:center}
+.robot-inner{width:50px;height:42px;background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:8px}
+.r-eye{width:10px;height:10px;background:#185FA5;border-radius:50%}
+.welcome-body{flex:1;padding:28px 24px;display:flex;flex-direction:column;gap:16px;overflow-y:auto}
+.welcome-intro{font-size:16px;color:#1a1a2e;font-weight:500;line-height:1.5;text-align:center}
+.welcome-intro span{color:#185FA5}
+.role-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.role-card{background:#f7f9fc;border:2px solid #e8eef5;border-radius:18px;padding:18px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:all 0.2s}
+.role-card:active,.role-card:hover{border-color:#185FA5;background:#E6F1FB;transform:scale(0.97)}
+.role-emoji{font-size:28px}
+.role-name{font-size:13px;font-weight:600;color:#1a1a2e}
+.demo-note{background:#FAEEDA;border-radius:12px;padding:12px 14px;font-size:12px;color:#854F0B;line-height:1.5;text-align:center}
+
+/* ── SCREEN 2: AI CHAT ONBOARD ── */
+.chat-header{background:#185FA5;padding:44px 16px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.back-btn{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.back-btn svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.chat-header-info{flex:1}
+.chat-header-name{font-size:16px;font-weight:600;color:#fff}
+.chat-header-sub{font-size:12px;color:#85B7EB}
+.chat-robot{width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.chat-robot-face{width:22px;height:18px;background:#fff;border-radius:5px;display:flex;align-items:center;justify-content:center;gap:4px}
+.chat-r-eye{width:5px;height:5px;background:#185FA5;border-radius:50%}
+.messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:#f7f9fc}
+.msg{display:flex;flex-direction:column;max-width:85%}
+.msg.ai{align-self:flex-start}
+.msg.user{align-self:flex-end}
+.msg-bubble{padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.55}
+.msg.ai .msg-bubble{background:#fff;border:1px solid #e8eef5;border-bottom-left-radius:4px;color:#1a1a2e}
+.msg.user .msg-bubble{background:#185FA5;color:#fff;border-bottom-right-radius:4px}
+.msg-time{font-size:10px;color:#aaa;margin-top:4px;padding:0 4px}
+.msg.user .msg-time{text-align:right}
+.typing{display:flex;align-items:center;gap:5px;padding:14px 16px;background:#fff;border:1px solid #e8eef5;border-radius:18px;border-bottom-left-radius:4px;width:64px}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:#185FA5;opacity:0.4;animation:bounce 1.2s infinite}
+.typing-dot:nth-child(2){animation-delay:0.2s}
+.typing-dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:0.4}30%{transform:translateY(-6px);opacity:1}}
+.input-area{padding:10px 12px;background:#fff;border-top:1px solid #f0f0f0;display:flex;gap:8px;align-items:flex-end;flex-shrink:0}
+.msg-input{flex:1;border:1.5px solid #e8eef5;border-radius:22px;padding:10px 16px;font-size:14px;font-family:inherit;outline:none;resize:none;max-height:100px;min-height:42px;color:#1a1a2e;background:#f7f9fc;transition:border-color 0.2s}
+.msg-input:focus{border-color:#185FA5;background:#fff}
+.send-btn{width:42px;height:42px;border-radius:50%;background:#185FA5;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform 0.15s,opacity 0.15s}
+.send-btn:active{transform:scale(0.92)}
+.send-btn:disabled{opacity:0.4}
+.send-btn svg{width:18px;height:18px;fill:#fff}
+.suggestions{display:flex;gap:6px;padding:6px 12px;overflow-x:auto;flex-shrink:0;background:#fff;scrollbar-width:none}
+.suggestions::-webkit-scrollbar{display:none}
+.sug{background:#E6F1FB;border:1px solid #B5D4F4;border-radius:16px;padding:6px 12px;font-size:12px;color:#185FA5;font-weight:500;white-space:nowrap;cursor:pointer;transition:all 0.15s;flex-shrink:0}
+.sug:active{background:#185FA5;color:#fff}
+
+/* ── SCREEN 3: LEARNING PATH ── */
+.path-header{background:#1a1a2e;padding:44px 20px 20px;flex-shrink:0}
+.path-back{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,0.5);font-size:13px;cursor:pointer;margin-bottom:12px;background:none;border:none;font-family:inherit}
+.path-back svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.path-greeting{font-size:22px;font-weight:700;color:#fff;line-height:1.3}
+.path-greeting span{color:#85B7EB}
+.path-sub{font-size:13px;color:rgba(255,255,255,0.5);margin-top:4px}
+.xp-wrap{background:rgba(255,255,255,0.08);border-radius:12px;padding:12px 14px;margin-top:14px}
+.xp-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.xp-label{font-size:12px;color:rgba(255,255,255,0.5)}
+.xp-val{font-size:12px;font-weight:600;color:#85B7EB}
+.xp-track{height:6px;background:rgba(255,255,255,0.1);border-radius:3px}
+.xp-fill{height:6px;background:#185FA5;border-radius:3px;width:0%;transition:width 0.8s 0.3s}
+.path-body{flex:1;overflow-y:auto;padding:16px}
+.section-title{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.07em;margin:0 0 10px}
+.activity-card{background:#fff;border:1.5px solid #e8eef5;border-radius:20px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;overflow:hidden}
+.activity-card:active{transform:scale(0.98);border-color:#185FA5}
+.activity-card.featured{border-color:#185FA5;background:linear-gradient(135deg,#E6F1FB 0%,#fff 60%)}
+.ac-top{display:flex;align-items:flex-start;gap:10px}
+.ac-icon{width:44px;height:44px;border-radius:12px;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.ac-info{flex:1}
+.ac-tag{font-size:10px;font-weight:700;color:#185FA5;text-transform:uppercase;letter-spacing:0.06em}
+.ac-title{font-size:15px;font-weight:700;color:#1a1a2e;margin:2px 0}
+.ac-desc{font-size:12px;color:#888;line-height:1.45}
+.ac-bottom{display:flex;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap}
+.ac-pill{background:#E6F1FB;color:#185FA5;font-size:11px;font-weight:600;padding:3px 9px;border-radius:12px}
+.ac-pill.green{background:#E1F5EE;color:#0F6E56}
+.ac-xp{font-size:11px;color:#aaa;margin-left:auto;font-weight:600}
+.ai-badge{display:inline-flex;align-items:center;gap:4px;background:#1a1a2e;color:#85B7EB;font-size:10px;font-weight:600;padding:3px 8px;border-radius:10px;margin-bottom:10px}
+.ai-badge-dot{width:5px;height:5px;border-radius:50%;background:#1D9E75;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.breathe-card{background:#E1F5EE;border:1.5px solid #9FE1CB;border-radius:20px;padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all 0.2s}
+.breathe-card:active{transform:scale(0.98)}
+.breathe-circle{width:48px;height:48px;border-radius:50%;background:#1D9E75;display:flex;align-items:center;justify-content:center;flex-shrink:0;animation:breathe-anim 4s ease-in-out infinite}
+@keyframes breathe-anim{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+.breathe-icon{width:24px;height:24px;fill:none;stroke:#fff;stroke-width:2}
+.breathe-info{flex:1}
+.breathe-title{font-size:14px;font-weight:700;color:#085041}
+.breathe-sub{font-size:12px;color:#0F6E56;margin-top:2px}
+.path-nav{height:70px;background:#fff;border-top:1px solid #f0f0f0;display:flex;align-items:flex-start;padding-top:8px;flex-shrink:0}
+.pn-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px}
+.pn-icon{width:32px;height:32px;border-radius:9px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;transition:background 0.2s}
+.pn-icon.active-icon{background:#185FA5}
+.pn-icon svg{width:17px;height:17px;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.pn-icon.active-icon svg{stroke:#fff}
+.pn-icon:not(.active-icon) svg{stroke:#aaa}
+.pn-label{font-size:10px;color:#aaa;font-weight:500}
+.pn-label.active-label{color:#185FA5;font-weight:700}
+
+/* LOADING OVERLAY */
+.loading-overlay{position:absolute;inset:0;background:rgba(255,255,255,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:100;opacity:0;pointer-events:none;transition:opacity 0.3s}
+.loading-overlay.show{opacity:1;pointer-events:all}
+.loading-robot{width:64px;height:64px;background:#185FA5;border-radius:50%;display:flex;align-items:center;justify-content:center;animation:spin-soft 2s ease-in-out infinite}
+@keyframes spin-soft{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.loading-face{width:38px;height:30px;background:#E6F1FB;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:6px}
+.loading-eye{width:8px;height:8px;background:#185FA5;border-radius:50%;animation:blink 2s infinite}
+.loading-eye:last-child{animation-delay:0.15s}
+@keyframes blink{0%,45%,55%,100%{transform:scaleY(1)}50%{transform:scaleY(0.1)}}
+.loading-text{font-size:15px;font-weight:600;color:#1a1a2e;text-align:center}
+.loading-sub{font-size:13px;color:#888;text-align:center;max-width:240px;line-height:1.5}
+.loading-dots{display:flex;gap:6px}
+.ld{width:8px;height:8px;border-radius:50%;background:#185FA5;animation:bounce 1.2s infinite}
+.ld:nth-child(2){animation-delay:0.2s}
+.ld:nth-child(3){animation-delay:0.4s}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- LOADING OVERLAY -->
+  <div class="loading-overlay" id="loading">
+    <div class="loading-robot">
+      <div class="loading-face">
+        <div class="loading-eye"></div>
+        <div class="loading-eye"></div>
+      </div>
+    </div>
+    <div class="loading-text">Pace is thinking...</div>
+    <div class="loading-sub" id="loading-sub">Building your personalised learning path</div>
+    <div class="loading-dots"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div>
+  </div>
+
+  <!-- SCREEN 1: WELCOME -->
+  <div class="screen" id="s-welcome">
+    <div class="welcome-header">
+      <div class="pace-wordmark">pace</div>
+      <div class="pace-tagline">Personalised · Inclusive · Movement</div>
+      <div class="robot-wrap">
+        <div class="robot-inner"><div class="r-eye"></div><div class="r-eye"></div></div>
+      </div>
+    </div>
+    <div class="welcome-body">
+      <div class="welcome-intro">Hello! I'm <span>Pace</span> — your personal learning companion. Who's joining today?</div>
+      <div class="role-grid">
+        <div class="role-card" onclick="startStudentFlow()">
+          <div class="role-emoji">🧒</div>
+          <div class="role-name">Student</div>
+        </div>
+        <div class="role-card" onclick="alert('Teacher view — coming soon!')">
+          <div class="role-emoji">👩‍🏫</div>
+          <div class="role-name">Teacher</div>
+        </div>
+        <div class="role-card" onclick="alert('Parent view — coming soon!')">
+          <div class="role-emoji">👨‍👩‍👧</div>
+          <div class="role-name">Parent</div>
+        </div>
+      </div>
+      <div class="demo-note">⚡ This is a prototype demo — the AI responses are pre-scripted to simulate a real personalised conversation and learning path.</div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: AI CHAT -->
+  <div class="screen hidden" id="s-chat">
+    <div class="chat-header">
+      <button class="back-btn" onclick="goTo('s-welcome','s-chat')">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="chat-header-info">
+        <div class="chat-header-name">Pace AI</div>
+        <div class="chat-header-sub">Your learning companion ✦ online</div>
+      </div>
+      <div class="chat-robot">
+        <div class="chat-robot-face"><div class="chat-r-eye"></div><div class="chat-r-eye"></div></div>
+      </div>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="suggestions" id="suggestions">
+      <div class="sug" onclick="useSuggestion(this)">I love skateboarding 🛹</div>
+      <div class="sug" onclick="useSuggestion(this)">Football is my favourite ⚽</div>
+      <div class="sug" onclick="useSuggestion(this)">I like dancing 💃</div>
+      <div class="sug" onclick="useSuggestion(this)">I'm into robots 🤖</div>
+      <div class="sug" onclick="useSuggestion(this)">I love animals 🐾</div>
+      <div class="sug" onclick="useSuggestion(this)">Boxing is cool 🥊</div>
+    </div>
+    <div class="input-area">
+      <textarea class="msg-input" id="msg-input" placeholder="Tell Pace what you love..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="send-btn" id="send-btn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: LEARNING PATH -->
+  <div class="screen hidden" id="s-path">
+    <div class="path-header">
+      <button class="path-back" onclick="goTo('s-chat','s-path')">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Back to chat
+      </button>
+      <div class="path-greeting">Your learning path, <span id="path-name">learner</span> 🎉</div>
+      <div class="path-sub" id="path-sub">Built around what you love</div>
+      <div class="xp-wrap">
+        <div class="xp-row"><span class="xp-label">Level 1 · Getting started</span><span class="xp-val">0 / 100 XP</span></div>
+        <div class="xp-track"><div class="xp-fill" id="xp-fill"></div></div>
+      </div>
+    </div>
+    <div class="path-body" id="path-body">
+      <div class="ai-badge"><div class="ai-badge-dot"></div>AI-generated just for you</div>
+    </div>
+    <nav class="path-nav">
+      <div class="pn-item"><div class="pn-icon active-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><span class="pn-label active-label">Home</span></div>
+      <div class="pn-item"><div class="pn-icon"><svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div><span class="pn-label">Videos</span></div>
+      <div class="pn-item"><div class="pn-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><span class="pn-label">Progress</span></div>
+      <div class="pn-item"><div class="pn-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><span class="pn-label">Profile</span></div>
+    </nav>
+  </div>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+//  OFFLINE MOCK AI ENGINE
+//  All responses are pre-scripted and chosen
+//  based on the conversation stage + keywords
+// ─────────────────────────────────────────────
+
+var userName = '';
+var userInterests = [];
+var messageCount = 0;
+var conversationStage = 0; // 0=name, 1=interests, 2=followup, 3=ready
+
+// Keyword → interest label + emoji map
+var INTEREST_MAP = [
+  { words: ['skateboard','skate','skating'],   label: 'Skateboarding', emoji: '🛹', subject: 'Physics · Forces' },
+  { words: ['football','soccer','footy'],       label: 'Football',      emoji: '⚽', subject: 'Maths · Statistics' },
+  { words: ['danc','ballet','hip hop'],         label: 'Dancing',       emoji: '💃', subject: 'Music · Rhythm' },
+  { words: ['robot','coding','code','program'], label: 'Robotics',      emoji: '🤖', subject: 'Computing · KS2' },
+  { words: ['animal','dog','cat','horse','pet'],label: 'Animals',       emoji: '🐾', subject: 'Science · Biology' },
+  { words: ['boxing','martial','karate','judo'],label: 'Martial Arts',  emoji: '🥊', subject: 'PE · Fitness' },
+  { words: ['swim','swimming'],                  label: 'Swimming',      emoji: '🏊', subject: 'Science · Forces' },
+  { words: ['art','draw','paint'],               label: 'Art',           emoji: '🎨', subject: 'Art · Design' },
+  { words: ['music','guitar','sing','drum'],     label: 'Music',         emoji: '🎵', subject: 'Music · KS1' },
+  { words: ['minecraft','gaming','game'],        label: 'Gaming',        emoji: '🎮', subject: 'Computing · Logic' },
+  { words: ['lego','build','construct'],         label: 'Building',      emoji: '🧱', subject: 'Design & Tech' },
+  { words: ['read','book','story'],              label: 'Reading',       emoji: '📚', subject: 'English · KS1' },
+  { words: ['cook','bake','food'],               label: 'Cooking',       emoji: '🍳', subject: 'Maths · Measuring' },
+  { words: ['cricket','tennis','basket'],        label: 'Sport',         emoji: '🏅', subject: 'PE · KS2' },
+  { words: ['gymnastics','gym','tumble'],        label: 'Gymnastics',    emoji: '🤸', subject: 'PE · Movement' },
+  { words: ['cycle','cycling','bike'],           label: 'Cycling',       emoji: '🚴', subject: 'Science · Forces' },
+];
+
+function detectInterests(text) {
+  var t = text.toLowerCase();
+  INTEREST_MAP.forEach(function(m) {
+    m.words.forEach(function(w) {
+      if (t.includes(w)) {
+        var already = userInterests.find(function(i){ return i.label === m.label; });
+        if (!already) userInterests.push(m);
+      }
+    });
+  });
+}
+
+function extractName(text) {
+  // Try to pull a capitalised word; fall back to first word
+  var words = text.trim().split(/\s+/);
+  var name = '';
+  words.forEach(function(w) {
+    var clean = w.replace(/[^a-zA-Z]/g,'');
+    if (clean.length > 1 && clean[0] === clean[0].toUpperCase() && isNaN(clean[0]) && !name) {
+      name = clean;
+    }
+  });
+  if (!name) name = words[0].replace(/[^a-zA-Z]/g,'');
+  return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+}
+
+// ── Scripted response banks ──────────────────
+
+function getAIResponse(userText) {
+  var t = userText.toLowerCase();
+
+  // Stage 0: we just asked for name
+  if (conversationStage === 0) {
+    userName = extractName(userText);
+    conversationStage = 1;
+    return "Great to meet you, " + userName + "! 🌟 I love your name! Now tell me — what's your favourite thing to do? It can be a sport, a hobby, anything you love! 😊";
+  }
+
+  // Stage 1: they told us interests
+  if (conversationStage === 1) {
+    detectInterests(userText);
+    conversationStage = 2;
+    var interest = userInterests.length > 0 ? userInterests[0].label : 'that';
+    var followUps = [
+      "Wow, " + interest + " is SO cool! 🔥 How long have you been into it? And do you have a favourite subject at school?",
+      "Amazing! " + interest + " takes real skill! 💪 What do you love most about it? And what's your favourite lesson at school?",
+      interest + "?! That's awesome! 🎉 Are you in a team or do you do it on your own? What subject are you best at in school?"
+    ];
+    return followUps[Math.floor(Math.random() * followUps.length)];
+  }
+
+  // Stage 2: follow-up answer — now we build the path
+  if (conversationStage === 2) {
+    detectInterests(userText); // pick up any new interests mentioned
+    conversationStage = 3;
+    var name = userName || 'you';
+    var interest = userInterests.length > 0 ? userInterests[0].label : 'your interests';
+    return "This is brilliant, " + name + "! 🚀 I've got everything I need now. I'm going to build you a learning path that uses " + interest + " to make every lesson feel exciting. Are you ready to see it? Tap the button below! READY_TO_BUILD";
+  }
+
+  // Stage 3+: already ready (shouldn't normally reach here)
+  return "You're all set, " + (userName || 'superstar') + "! 🎉 Tap 'Build my learning path' to see what I've made for you! READY_TO_BUILD";
+}
+
+// ── Learning path generator (offline) ────────
+
+function generatePath() {
+  var primary = userInterests.length > 0 ? userInterests[0] : { label: 'Learning', emoji: '📚', subject: 'KS1 · General' };
+  var secondary = userInterests.length > 1 ? userInterests[1] : { label: 'Maths', emoji: '🔢', subject: 'Maths · KS1' };
+  var n = userName || 'learner';
+  var l = primary.label;
+
+  // Rich pre-built activity templates keyed by interest
+  var templates = {
+    'Skateboarding': [
+      { emoji:'🛹', tag:'Maths · KS2', title:'Skate Park Angles & Speed', desc:'Calculate ramp angles and estimate speed using real skate park measurements.', pill1:'Skateboarding', pill2:'Geometry', xp:'35', featured:true },
+      { emoji:'⚖️', tag:'Science · KS2', title:'Forces on a Skateboard', desc:'Explore gravity, friction and air resistance through skateboarding physics.', pill1:'Physics', pill2:'Forces & Motion', xp:'25' },
+      { emoji:'📐', tag:'Maths · KS1', title:'Shapes in the Skate Park', desc:'Spot triangles, rectangles and curves hidden in skate park ramps.', pill1:'Geometry', pill2:'2D Shapes', xp:'20' },
+      { emoji:'✍️', tag:'English · KS2', title:'Write a Skate Trick Tutorial', desc:'Plan and write step-by-step instructions for your favourite trick.', pill1:'Writing', pill2:'Instructions', xp:'20' },
+    ],
+    'Football': [
+      { emoji:'⚽', tag:'Maths · KS2', title:'Football Stats & Charts', desc:'Collect match data and create bar charts to track your team\'s performance.', pill1:'Football', pill2:'Statistics', xp:'35', featured:true },
+      { emoji:'🏟️', tag:'Science · KS2', title:'The Science of a Free Kick', desc:'Discover how spin, air pressure and force affect the ball\'s curve.', pill1:'Physics', pill2:'Forces', xp:'25' },
+      { emoji:'🗺️', tag:'Geography · KS2', title:'World Cup World Tour', desc:'Map the countries in the World Cup and learn about their cultures.', pill1:'Football', pill2:'Geography', xp:'20' },
+      { emoji:'📝', tag:'English · KS1', title:'Match Report Writing', desc:'Write a match report using describing words and exciting punctuation.', pill1:'Writing', pill2:'Non-fiction', xp:'20' },
+    ],
+    'Dancing': [
+      { emoji:'💃', tag:'Music · KS2', title:'Rhythm, Beat & Timing', desc:'Clap, count and move to different rhythms — then create your own dance sequence.', pill1:'Dancing', pill2:'Music & Rhythm', xp:'35', featured:true },
+      { emoji:'🔢', tag:'Maths · KS1', title:'Counting Beats & Patterns', desc:'Use dance sequences to practise counting in 2s, 4s and 8s.', pill1:'Patterns', pill2:'Number', xp:'25' },
+      { emoji:'🌍', tag:'Geography · KS2', title:'Dances Around the World', desc:'Explore traditional dances from 5 different countries and their cultures.', pill1:'Dancing', pill2:'Geography', xp:'20' },
+      { emoji:'✍️', tag:'English · KS2', title:'Write a Dance Poem', desc:'Use powerful verbs and similes to describe movement in a short poem.', pill1:'Creative Writing', pill2:'Poetry', xp:'20' },
+    ],
+    'Robotics': [
+      { emoji:'🤖', tag:'Computing · KS2', title:'Code a Robot Maze', desc:'Write simple instructions (algorithms) to guide a robot through a maze without hitting walls.', pill1:'Robotics', pill2:'Algorithms', xp:'35', featured:true },
+      { emoji:'💡', tag:'Science · KS2', title:'How do Robots Think?', desc:'Learn about sensors, inputs and outputs — then design your own helpful robot.', pill1:'Technology', pill2:'Computing', xp:'25' },
+      { emoji:'🔢', tag:'Maths · KS2', title:'Binary & Robot Language', desc:'Discover how robots use 0s and 1s — and decode your name in binary!', pill1:'Binary', pill2:'Number Systems', xp:'30' },
+      { emoji:'📖', tag:'English · KS2', title:'My Robot Story', desc:'Write a short story from the perspective of a robot on its first day in school.', pill1:'Narrative', pill2:'Creative Writing', xp:'20' },
+    ],
+    'Animals': [
+      { emoji:'🐾', tag:'Science · KS1', title:'Animal Habitats Explorer', desc:'Match 10 animals to their habitats and discover why each one is perfectly adapted.', pill1:'Animals', pill2:'Biology', xp:'35', featured:true },
+      { emoji:'🔢', tag:'Maths · KS2', title:'Wildlife Survey & Graphs', desc:'Record imaginary bird sightings and display the data in a pictogram.', pill1:'Data', pill2:'Statistics', xp:'25' },
+      { emoji:'✍️', tag:'English · KS2', title:'Animal Report Writing', desc:'Research your favourite animal and write a non-fiction report with facts and headings.', pill1:'Non-fiction', pill2:'Writing', xp:'20' },
+      { emoji:'🌿', tag:'Geography · KS1', title:'Animal World Map', desc:'Pin 8 animals to the countries they come from and label each continent.', pill1:'Animals', pill2:'Geography', xp:'20' },
+    ],
+    'Martial Arts': [
+      { emoji:'🥊', tag:'PE · KS2', title:'Fitness Circuit Challenge', desc:'Design your own 5-move circuit based on boxing and martial arts techniques.', pill1:'Boxing', pill2:'Health & Fitness', xp:'35', featured:true },
+      { emoji:'⚖️', tag:'Science · KS2', title:'Forces Behind the Punch', desc:'Investigate how mass, speed and force combine in striking sports.', pill1:'Physics', pill2:'Forces', xp:'25' },
+      { emoji:'🗺️', tag:'Geography · KS2', title:'Martial Arts World Map', desc:'Discover which martial art comes from which country and map them out.', pill1:'Culture', pill2:'Geography', xp:'20' },
+      { emoji:'🧘', tag:'PSHE · KS2', title:'Focus & Self-Control', desc:'Explore the mindset skills top martial artists use — and try them yourself.', pill1:'Wellbeing', pill2:'PSHE', xp:'20' },
+    ],
+  };
+
+  // Find the best template match
+  var acts = null;
+  for (var key in templates) {
+    if (l.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(l.toLowerCase())) {
+      acts = templates[key];
+      break;
+    }
+  }
+
+  // Fallback: build generic but personalised activities
+  if (!acts) {
+    acts = [
+      { emoji: primary.emoji, tag: primary.subject, title: l + ' Challenge: Starter Quest', desc: 'Your first activity is built around what you love — dive in and earn your first XP!', pill1: l, pill2: 'KS2 · Cross-curricular', xp:'35', featured:true },
+      { emoji:'🔢', tag:'Maths · KS2', title: l + ' by Numbers', desc: 'Use real data from your interest to practise maths in context.', pill1: 'Maths', pill2: 'Statistics', xp:'25' },
+      { emoji:'✍️', tag:'English · KS2', title:'Write About What You Love', desc:'Create a persuasive piece about why ' + l + ' is the best hobby in the world.', pill1:'Writing', pill2:'Persuasion', xp:'20' },
+      { emoji:'🌍', tag:'Geography · KS1', title: l + ' Around the World', desc:'Explore how your interest connects to different places and cultures globally.', pill1: l, pill2:'Geography', xp:'20' },
+    ];
+  }
+
+  return {
+    greeting: "Here's your path, " + n + "!",
+    subtext: "Built around your love of " + l + " 🔥",
+    breathe: {
+      title: "Take a breath before we start 🌿",
+      sub: "You've got this, " + n + "! One step at a time 💪"
+    },
+    activities: acts
+  };
+}
+
+// ─────────────────────────────────────────────
+//  UI FUNCTIONS (same as original)
+// ─────────────────────────────────────────────
+
+function startStudentFlow() {
+  conversationStage = 0;
+  userName = '';
+  userInterests = [];
+  messageCount = 0;
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('suggestions').style.display = 'flex';
+  goTo('s-chat', 's-welcome');
+  setTimeout(function() {
+    addAIMessage("Hi there! I'm Pace, your learning companion! 🤖✨ I'm going to build you a special learning adventure based on what YOU love. First things first — what's your name? 😊");
+  }, 400);
+}
+
+function goTo(showId, hideId) {
+  var show = document.getElementById(showId);
+  var hide = document.getElementById(hideId);
+  if (hide) {
+    hide.classList.remove('hidden');
+    hide.classList.add('exit');
+    setTimeout(function() { hide.classList.add('hidden'); hide.classList.remove('exit'); }, 350);
+  }
+  if (show) { show.classList.remove('hidden','exit'); }
+}
+
+function addAIMessage(text) {
+  var msgs = document.getElementById('messages');
+  var msg = document.createElement('div');
+  msg.className = 'msg ai';
+  var now = new Date();
+  var time = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+  var clean = text.replace('READY_TO_BUILD','').trim();
+  msg.innerHTML = '<div class="msg-bubble">' + clean + '</div><div class="msg-time">' + time + '</div>';
+  msgs.appendChild(msg);
+  msgs.scrollTop = msgs.scrollHeight;
+  if (text.includes('READY_TO_BUILD')) { setTimeout(addBuildButton, 500); }
+}
+
+function addBuildButton() {
+  var msgs = document.getElementById('messages');
+  var btn = document.createElement('div');
+  btn.style.cssText = 'display:flex;justify-content:center;margin:8px 0';
+  btn.innerHTML = '<button onclick="buildLearningPath()" style="background:#185FA5;color:#fff;border:none;border-radius:22px;padding:14px 28px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px" >🚀 Build my learning path!</button>';
+  msgs.appendChild(btn);
+  msgs.scrollTop = msgs.scrollHeight;
+  document.getElementById('suggestions').style.display = 'none';
+}
+
+function addUserMessage(text) {
+  var msgs = document.getElementById('messages');
+  var msg = document.createElement('div');
+  msg.className = 'msg user';
+  var now = new Date();
+  var time = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+  msg.innerHTML = '<div class="msg-bubble">' + text + '</div><div class="msg-time">' + time + '</div>';
+  msgs.appendChild(msg);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  var msgs = document.getElementById('messages');
+  var typing = document.createElement('div');
+  typing.className = 'msg ai';
+  typing.id = 'typing-indicator';
+  typing.innerHTML = '<div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+  msgs.appendChild(typing);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function hideTyping() {
+  var el = document.getElementById('typing-indicator');
+  if (el) el.remove();
+}
+
+function useSuggestion(el) {
+  document.getElementById('msg-input').value = el.textContent.trim();
+  sendMessage();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+function sendMessage() {
+  var input = document.getElementById('msg-input');
+  var text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('send-btn').disabled = true;
+  document.getElementById('suggestions').style.display = 'none';
+
+  addUserMessage(text);
+  messageCount++;
+
+  showTyping();
+
+  // Simulate realistic AI "thinking" delay (0.8 – 1.6s)
+  var delay = 800 + Math.random() * 800;
+  setTimeout(function() {
+    hideTyping();
+    var response = getAIResponse(text);
+    addAIMessage(response);
+    document.getElementById('send-btn').disabled = false;
+    document.getElementById('msg-input').focus();
+  }, delay);
+}
+
+function buildLearningPath() {
+  var overlay = document.getElementById('loading');
+  var loadingSub = document.getElementById('loading-sub');
+  overlay.classList.add('show');
+  loadingSub.textContent = 'Analysing your interests...';
+  setTimeout(function() { loadingSub.textContent = 'Matching curriculum to what you love...'; }, 1200);
+  setTimeout(function() { loadingSub.textContent = 'Creating your personalised activities...'; }, 2400);
+
+  setTimeout(function() {
+    var path = generatePath();
+    renderPath(path);
+    overlay.classList.remove('show');
+    goTo('s-path', 's-chat');
+    setTimeout(function() { document.getElementById('xp-fill').style.width = '15%'; }, 600);
+  }, 3400);
+}
+
+function renderPath(path) {
+  document.getElementById('path-name').textContent = userName || 'learner';
+  document.getElementById('path-sub').textContent = path.subtext || 'Built around what you love';
+
+  var body = document.getElementById('path-body');
+  body.innerHTML = '<div class="ai-badge"><div class="ai-badge-dot"></div>AI-generated just for you</div>';
+
+  if (path.breathe) {
+    var bc = document.createElement('div');
+    bc.className = 'breathe-card';
+    bc.innerHTML = '<div class="breathe-circle"><svg class="breathe-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l2 2"/></svg></div><div class="breathe-info"><div class="breathe-title">' + path.breathe.title + '</div><div class="breathe-sub">' + path.breathe.sub + '</div></div>';
+    body.appendChild(bc);
+  }
+
+  var label = document.createElement('div');
+  label.className = 'section-title';
+  label.textContent = "Today's activities";
+  body.appendChild(label);
+
+  (path.activities || []).forEach(function(act, i) {
+    var card = document.createElement('div');
+    card.className = 'activity-card' + (act.featured ? ' featured' : '');
+    card.innerHTML =
+      '<div class="ac-top">' +
+        '<div class="ac-icon">' + (act.emoji||'📚') + '</div>' +
+        '<div class="ac-info">' +
+          '<div class="ac-tag">' + (act.featured?'⭐ Featured · ':'') + (act.tag||'Learning') + '</div>' +
+          '<div class="ac-title">' + (act.title||'Activity '+(i+1)) + '</div>' +
+          '<div class="ac-desc">' + (act.desc||'') + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="ac-bottom">' +
+        '<span class="ac-pill">' + (act.pill1||'') + '</span>' +
+        '<span class="ac-pill green">' + (act.pill2||'') + '</span>' +
+        '<span class="ac-xp">+' + (act.xp||'20') + ' XP</span>' +
+      '</div>';
+    body.appendChild(card);
+  });
+}
+
+// Init
+document.getElementById('s-welcome').classList.remove('hidden');
+</script>
+</body>
+</html>
